@@ -11,6 +11,8 @@
 .info p{white-space:pre-line}
 .info b{font-size:15px}
 
+.bibleLink{color:#ffd479;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;font-weight:950}.bibleLink:hover,.bibleLink:focus{color:#fff2bd}.verse .bibleLink{display:inline-block;margin-bottom:6px}.step .bibleLink{display:block}
+
 </style>
 </head>
 <body>
@@ -44,6 +46,21 @@
 const $=id=>document.getElementById(id);
 let HUBS=[];let slug=new URLSearchParams(location.search).get('hub');
 function esc(s){return String(s??'')}
+function normalizeBibleRef(ref){
+  const raw=String(ref??'').trim().replace(/\s+/g,' ');
+  if(!raw)return '';
+  let m=raw.match(/^(.+?)\s+(\d+)\s*[~～\-–—]\s*(\d+)\s*(?:장|편)$/);
+  if(m)return `${m[1].trim()} ${m[2]}:1`;
+  m=raw.match(/^(.+?)\s+(\d+)\s*(?:장|편)$/);
+  if(m)return `${m[1].trim()} ${m[2]}:1`;
+  m=raw.match(/^(.+?)\s+(\d+)\s*:\s*(\d+)\s*[~～\-–—]\s*(\d+)$/);
+  if(m)return `${m[1].trim()} ${m[2]}:${m[3]}`;
+  m=raw.match(/^(.+?)\s+(\d+)\s*:\s*(\d+)$/);
+  if(m)return `${m[1].trim()} ${m[2]}:${m[3]}`;
+  return raw;
+}
+function bibleHref(ref){return `https://centiger.github.io/CEN-Bible2.0/?ref=${encodeURIComponent(normalizeBibleRef(ref))}`}
+function bibleLink(ref){return `<a class="bibleLink" href="${bibleHref(ref)}" target="_blank" rel="noopener noreferrer">${esc(ref)}</a>`}
 function hrefFor(h,dir){
   if(!h) return '../index.html';
 
@@ -75,9 +92,9 @@ function labelFor(h,dir){
 function nodes(items){return (items||[]).map(i=>`<div class="node"><div class="ico">${esc(i.icon)}</div><b>${esc(i.title)}</b><small>${esc(i.text)}</small></div>`).join('')}
 function renderCards(title,items){if(!items||!items.length)return '';const sid=title==='Meaning'?'connections':(title==='파노라마'?'integration':'');return `<section class="card" ${sid?`id="${sid}"`:''}><h2 class="sectionTitle">${title}</h2><div class="infoGrid">${items.map(x=>`<div class="info"><b>${esc(x.title)}</b><p>${esc(x.text)}</p></div>`).join('')}</div></section>`}
 function renderList(title,items){if(!items||!items.length)return '';return `<section class="card"><h2 class="sectionTitle">${title}</h2><div class="listFlow">${items.map(x=>`<div class="step">${esc(x)}</div>`).join('')}</div></section>`}
-function renderVerse(items){if(!items||!items.length)return '';return `<section class="card"><h2 class="sectionTitle">대표성구</h2><div class="verseCard">${items.map(v=>`<div class="verse"><b>${esc(v.ref)}</b><p>${esc(v.text)}</p></div>`).join('')}</div></section>`}
+function renderVerse(items){if(!items||!items.length)return '';return `<section class="card"><h2 class="sectionTitle">대표성구</h2><div class="verseCard">${items.map(v=>`<div class="verse"><b>${bibleLink(v.ref)}</b><p>${esc(v.text)}</p></div>`).join('')}</div></section>`}
 function renderPeople(items){if(!items||!items.length)return '';return `<section class="card"><h2 class="sectionTitle">핵심인물</h2><div class="peopleGrid">${items.map(p=>`<div class="person"><span class="role">${esc(p.role)}</span><b>${esc(p.name)}</b><p>${esc(p.text)}</p></div>`).join('')}</div></section>`}
-function renderBible(items){if(!items||!items.length)return '';return `<section class="card"><h2 class="sectionTitle">관련성경</h2><div class="listFlow">${items.map(x=>`<div class="step">${esc(x)}</div>`).join('')}</div></section>`}
+function renderBible(items){if(!items||!items.length)return '';return `<section class="card"><h2 class="sectionTitle">관련성경</h2><div class="listFlow">${items.map(x=>`<div class="step">${bibleLink(x)}</div>`).join('')}</div></section>`}
 function renderMessage(msg){if(!msg)return '';return `<section class="messageBox"><b>핵심메시지</b><p>${esc(msg)}</p></section>`}
 function renderTabs(){ $('tabs').innerHTML=HUBS.map(h=>`<a class="tab ${h.id===slug?'active':''}" href="?hub=${h.id}">${esc(h.title.replace(' 허브',''))}</a>`).join('') }
 function renderHubList(){ $('hubList').innerHTML=HUBS.map((h,i)=>`<a class="hubItem ${h.id===slug?'active':''}" href="?hub=${h.id}"><b>${i+1}. ${esc(h.title)}</b><span>${esc(h.theme)}</span></a>`).join('') }
@@ -96,7 +113,7 @@ ${renderBible(h.bible)}
 ${renderMessage(h.message)}
 `}
 function render(){const h=HUBS.find(x=>x.id===slug)||HUBS[0];slug=h.id;renderTabs();renderHeader(h);renderHubList();$('content').innerHTML=renderHub(h);$('prevBottom').href=hrefFor(h,'prev');$('prevBottom').textContent=labelFor(h,'prev');$('nextBottom').href=hrefFor(h,'next');$('nextBottom').textContent=labelFor(h,'next');setTimeout(()=>{if(location.hash){const el=document.querySelector(location.hash);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});}},80)}
-async function init(){const res=await fetch('data/hubs.json?v=jesus-standard-v3-emoji');const data=await res.json();HUBS=data.hubs||[];slug=slug||data.defaultHub||(HUBS[0]&&HUBS[0].id);render()}
+async function init(){const res=await fetch('data/hubs.json?v=jesus-standard-v4-bible-bridge');const data=await res.json();HUBS=data.hubs||[];slug=slug||data.defaultHub||(HUBS[0]&&HUBS[0].id);render()}
 $('hubListBtn').onclick=()=>$('drawer').classList.add('show');$('drawerClose').onclick=()=>$('drawer').classList.remove('show');$('drawer').onclick=e=>{if(e.target.id==='drawer')$('drawer').classList.remove('show')};
 if('serviceWorker'in navigator){navigator.serviceWorker.register('../sw.js').catch(()=>{})}
 init();
